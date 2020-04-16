@@ -138,12 +138,40 @@ Napi::Object simdjsonnode::LazyParseWrapped(const Napi::CallbackInfo& info) {
   Napi::Object result = Napi::Object::New(env);
   result.Set("buffer", buffer);
   result.Set("valueForKeyPath", Napi::Function::New(env, simdjsonnode::ValueForKeyPathWrapped));
-  return result;  
+  return result;
+}
+
+Napi::Object simdjsonnode::ParseToBuffersWrapped(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  std::string json = info[0].As<Napi::String>();
+  dom::parser parser;
+  error_code error = parser.parse(json).error();
+  if (error) {
+    Napi::Error::New(env, error_message(error)).ThrowAsJavaScriptException();
+    return Napi::Object::New(env);
+  }
+
+  dom::document * doc = &parser.doc;
+  uint64_t* tape_buf = doc->tape.get();
+  uint8_t* str_buf = doc->string_buf.get();
+  uint64_t tape_buf_len = parser.current_loc;
+  uint8_t str_buf_len = parser.current_string_buf_loc - str_buf;
+
+  Napi::ArrayBuffer tapeBuffer = Napi::ArrayBuffer::New(env, tape_buf, tape_buf_len * sizeof(uint64_t));
+  Napi::ArrayBuffer stringBuffer = Napi::ArrayBuffer::New(env, str_buf, str_buf_len * sizeof(uint8_t));
+
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("tapeBuffer", tapeBuffer);
+  result.Set("stringBuffer", stringBuffer);
+  result.Set("tapeBufferLen", Napi::Number::New(env, tape_buf_len));
+  result.Set("stringBufferLen", Napi::Number::New(env, str_buf_len));
+  return result;
 }
 
 Napi::Object simdjsonnode::Init(Napi::Env env, Napi::Object exports) {
   exports.Set("isValid", Napi::Function::New(env, simdjsonnode::IsValidWrapped));
   exports.Set("parse", Napi::Function::New(env, simdjsonnode::ParseWrapped));
   exports.Set("lazyParse", Napi::Function::New(env, simdjsonnode::LazyParseWrapped));
+  exports.Set("parseToBuffers", Napi::Function::New(env, simdjsonnode::ParseToBuffersWrapped));
   return exports;
 }
