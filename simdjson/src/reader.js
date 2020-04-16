@@ -55,13 +55,13 @@ function dumpTape(tapeBufView, strBufView) {
       }
       case TapeType.INT64: {
         tapeIdx += size64;
-        const elemVal = tapeBufView.getInt32(tapeIdx, true)
+        const elemVal = tapeBufView.getInt64(tapeIdx, true)
         console.log(String.fromCharCode(elemType), elemVal);
         break;
       }
       case TapeType.UINT64: {
         tapeIdx += size64;
-        const elemVal = tapeBufView.getUint32(tapeIdx, true)
+        const elemVal = tapeBufView.getUint64(tapeIdx, true)
         console.log(String.fromCharCode(elemType), elemVal);
         break;
       }
@@ -77,7 +77,6 @@ function dumpTape(tapeBufView, strBufView) {
       }
     }
   }
-
 }
 
 dumpTape(
