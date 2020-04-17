@@ -151,20 +151,24 @@ Napi::Object simdjsonnode::ParseToBuffersWrapped(const Napi::CallbackInfo& info)
     return Napi::Object::New(env);
   }
 
-  dom::document * doc = &parser.doc;
-  uint64_t* tape_buf = doc->tape.get();
-  uint8_t* str_buf = doc->string_buf.get();
+  dom::document* doc = &parser.doc;
   uint64_t tape_buf_len = parser.current_loc;
-  uint8_t str_buf_len = parser.current_string_buf_loc - str_buf;
+  uint8_t str_buf_len = parser.current_string_buf_loc - doc->string_buf.get();
+  uint64_t* tape_buf = std::move(doc->tape).release();
+  uint8_t* str_buf = std::move(doc->string_buf).release();
 
-  Napi::ArrayBuffer tapeBuffer = Napi::ArrayBuffer::New(env, tape_buf, tape_buf_len * sizeof(uint64_t));
-  Napi::ArrayBuffer stringBuffer = Napi::ArrayBuffer::New(env, str_buf, str_buf_len * sizeof(uint8_t));
+  Napi::ArrayBuffer tapeBuf = Napi::ArrayBuffer::New(env, static_cast<void*>(tape_buf), tape_buf_len * sizeof(uint64_t),
+    [](Napi::Env /*env*/, void* buf) {
+      delete static_cast<uint64_t*>(buf);
+    });
+  Napi::ArrayBuffer strBuf = Napi::ArrayBuffer::New(env, static_cast<void*>(str_buf), str_buf_len * sizeof(uint8_t),
+    [](Napi::Env /*env*/, void* buf) {
+      delete static_cast<uint8_t*>(buf);
+    });
 
   Napi::Object result = Napi::Object::New(env);
-  result.Set("tapeBuffer", tapeBuffer);
-  result.Set("stringBuffer", stringBuffer);
-  result.Set("tapeBufferLen", Napi::Number::New(env, tape_buf_len));
-  result.Set("stringBufferLen", Napi::Number::New(env, str_buf_len));
+  result.Set("tapeBuf", tapeBuf);
+  result.Set("strBuf", strBuf);
   return result;
 }
 

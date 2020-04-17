@@ -87,13 +87,10 @@ describe(`simdjson`, function () {
     });
   });
 
-  context.only(`parseToBuffers`, function () {
+  context(`parseToBuffers`, function () {
     it(`returns array buffers`, function () {
-      const {tapeBuffer, stringBuffer} = simdjson.parseToBuffers(jsonExamples.cars);
-      dumpTape(
-        new DataView(tapeBuffer, tapeBuffer.byteOffset, tapeBuffer.length),
-        new DataView(stringBuffer, stringBuffer.byteOffset, stringBuffer.length)
-      );
+      const {tapeBuf, strBuf} = simdjson.parseToBuffers(jsonExamples.demo);
+      dumpTape(new DataView(tapeBuf), new DataView(strBuf));
     });
   });
 });
@@ -119,8 +116,6 @@ const TapeType = {
  * @param {DataView} strBufView
  */
 function dumpTape(tapeBufView, strBufView) {
-  console.log(tapeBufView);
-  console.log(strBufView);
   const size64 = 8 ; // sizeof(uint64_t)
   const size32 = 4;
   const textDecoder = new TextDecoder();

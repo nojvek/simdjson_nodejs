@@ -26,11 +26,11 @@ const jsonExamples = {
 const suite = new Benchmark.Suite();
 
 for (const [fileName, jsonStr] of Object.entries(jsonExamples)) {
-  suite.add(`${fileName}.json#simdjson`, function(){
+  suite.add(`${fileName}.json#lazyParse`, function(){
     simdjson.lazyParse(jsonStr);
   })
-  suite.add(`${fileName}.json#JSON`, function(){
-    JSON.parse(jsonStr);
+  suite.add(`${fileName}.json#parseToBuffers`, function(){
+    simdjson.parseToBuffers(jsonStr);
   })
 }
 
@@ -42,10 +42,10 @@ suite
     const columns = [
       `filename`,
       `filesize (MB)`,
-      `JSON.parse(ms)`,
-      `simdjson.lazyParse (ms)`,
-      `JSON.parse (GB/s)`,
-      `simdjson.lazyParse (GB/s)`,
+      `.parseToBuffers(ms)`,
+      `.lazyParse (ms)`,
+      `.parseToBuffers (GB/s)`,
+      `.lazyParse (GB/s)`,
       `X faster`,
     ];
 
