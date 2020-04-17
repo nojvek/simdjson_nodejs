@@ -5,6 +5,7 @@ const simdjson = require(`../index`);
 const examplesPath = `${__dirname}/../jsonexamples`;
 const jsonExamples = {
   demo: fs.readFileSync(`${examplesPath}/small/demo.json`, `utf-8`),
+  adversarial: fs.readFileSync(`${examplesPath}/small/adversarial.json`, `utf-8`),
   canada: fs.readFileSync(`${examplesPath}/canada.json`, `utf-8`),
   cars: fs.readFileSync(`${examplesPath}/small/cars.json`, `utf-8`),
   apache_builds: fs.readFileSync(`${examplesPath}/apache_builds.json`, `utf-8`),
@@ -120,52 +121,66 @@ function dumpTape(tapeBufView, strBufView) {
   const size32 = 4;
   const textDecoder = new TextDecoder();
 
+  const nestStack = [];
+  const indentStr = () => ('  '.repeat(nestStack.length));
+
   for(let tapeIdx = 0, len = tapeBufView.byteLength; tapeIdx < len; tapeIdx += size64) {
-    const elemType = tapeBufView.getUint8(tapeIdx + 7);
-    switch (elemType) {
+    const tapeType = tapeBufView.getUint8(tapeIdx + 7);
+    switch (tapeType) {
       case TapeType.ROOT:
+        // we start and end at root, nothing to do here
+        break;
       case TapeType.START_ARRAY:
-      case TapeType.START_OBJECT:
-      case TapeType.END_ARRAY:
-      case TapeType.END_OBJECT: {
-        const elemVal = tapeBufView.getUint32(tapeIdx, true)
-        console.log(String.fromCharCode(elemType));
+      case TapeType.START_OBJECT: {
+        console.log(`${indentStr()}${String.fromCharCode(tapeType)}`);
+        nestStack.push(tapeType);
         break;
       }
-      case TapeType.TRUE_VALUE:
-      case TapeType.FALSE_VALUE:
+      case TapeType.END_ARRAY:
+      case TapeType.END_OBJECT: {
+        nestStack.pop();
+        console.log(`${indentStr()}${String.fromCharCode(tapeType)}`);
+        break;
+      }
+      case TapeType.TRUE_VALUE: {
+        console.log(`${indentStr()}true`);
+        break;
+      }
+      case TapeType.FALSE_VALUE: {
+        console.log(`${indentStr()}false`);
+        break;
+      }
       case TapeType.NULL_VALUE: {
-        console.log(String.fromCharCode(elemType));
+        console.log(`${indentStr()}null`);
         break;
       }
       case TapeType.STRING: {
         const strIdx = tapeBufView.getUint32(tapeIdx, true)
         const strLen = strBufView.getUint32(strIdx, true)
         const str = textDecoder.decode(new DataView(strBufView.buffer, strBufView.byteOffset + strIdx + size32, strLen));
-        console.log(String.fromCharCode(elemType), str);
+        console.log(`${indentStr()}"${str}"`);
         break;
       }
       case TapeType.INT64: {
         tapeIdx += size64;
-        const elemVal = tapeBufView.getInt32(tapeIdx, true)
-        console.log(String.fromCharCode(elemType), elemVal);
+        const val = tapeBufView.getInt32(tapeIdx, true)
+        console.log(`${indentStr()}${val}`);
         break;
       }
       case TapeType.UINT64: {
         tapeIdx += size64;
-        const elemVal = tapeBufView.getUint32(tapeIdx, true)
-        console.log(String.fromCharCode(elemType), elemVal);
+        const val = tapeBufView.getUint32(tapeIdx, true)
+        console.log(`${indentStr()}${val}`);
         break;
       }
       case TapeType.DOUBLE: {
         tapeIdx += size64;
-        const elemVal = tapeBufView.getFloat64(tapeIdx, true)
-        console.log(String.fromCharCode(elemType), elemVal);
+        const val = tapeBufView.getFloat64(tapeIdx, true)
+        console.log(`${indentStr()}${val}`);
         break;
       }
       default: {
-        throw new Error(`unknown type ${elemType}, this should never happen`);
-        break;
+        throw new Error(`unknown type ${tapeType}, this should never happen`);
       }
     }
   }
