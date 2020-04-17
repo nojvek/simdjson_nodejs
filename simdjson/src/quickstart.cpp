@@ -7,18 +7,6 @@ auto cars_json = R"( [
   { "make": "Toyota", "model": "Tercel", "year": 1999, "tire_pressure": [ 29.8, 30.0 ], "fast": true, "info": null}
 ] )"_padded;
 
-void print_bytes(std::ostream& out, const char *title, const unsigned char *data, size_t dataLen, bool format = true) {
-    out << title << std::endl;
-    out << std::setfill('0');
-    for(size_t i = 0; i < dataLen; ++i) {
-        out << std::hex << std::setw(2) << (int)data[i];
-        if (format) {
-            out << (((i + 1) % 16 == 0) ? "\n" : " ");
-        }
-    }
-    out << std::endl;
-}
-
 int main(void) {
   simdjson::dom::parser parser;
   simdjson::dom::element cars = parser.parse(cars_json);
@@ -36,6 +24,4 @@ int main(void) {
   std::ofstream str_buf_file ("str.buffer",std::ofstream::binary);
   str_buf_file.write(reinterpret_cast<char*>(str_buf), str_buf_len * sizeof(uint8_t));
   str_buf_file.close();
-
-  // doc->dump_raw_tape(cout);
 }
